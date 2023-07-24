@@ -10,8 +10,7 @@ const Sidebar = ({ topics }: SidebarProps) => {
 
   return (
     <nav className='sidebar'>
-      {topics.length ? (
-        <ul>
+        <ul className='current'>
           {topics.map((topic) => (
             <li key={topic.id} className='topic'>
               <NavLink to={`topics/${topic.name}`}>
@@ -20,18 +19,15 @@ const Sidebar = ({ topics }: SidebarProps) => {
             </li>
           ))}
         </ul>
-      ) : (
-        <ul>
-          <li>No 🔥 Topics 😱</li>
+        <ul className='create'>
           <li>
             <NavLink
-              to={`create-topic`}
+              to={'topics/create'}
             >
-              Create 🔥 Topic
+              Create New 🔥 Topic
             </NavLink>
           </li>
         </ul>
-      )}
     </nav>
   )
 }
