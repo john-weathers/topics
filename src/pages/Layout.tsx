@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ContextType } from 'react';
 import { Outlet, useLoaderData } from 'react-router-dom'
 import axios from '../api/axios';
 import Navbar from '../components/Navbar'
@@ -11,14 +11,40 @@ export type Topic = {
   id: number,
 }
 
+export type User = {
+  username: string,
+  rating: number,
+}
+
+export type Post = {
+  id: number,
+  topic: string,
+  title: string,
+  description: string,
+  rating: number,
+  created: Date,
+  user: User,
+}
+
+export type Home = {
+  topics: Topic[],
+  feed?: Post[],
+}
+
 export const loader = async () => {
-  const topics = await axios.get<Topic[]>(TOPICS_URL);
-  return topics.data;
+  const url = new URL(window.location.href);
+  const path = Boolean(url.pathname.slice(1));
+  const home = await axios.get<Home>(TOPICS_URL, {
+    params: {
+      index: path,
+    }
+  });
+  return home.data;
 }
 
 const Layout = () => {
   // temporary work-around since React Router does not support generic types here
-  const topics = useLoaderData() as Topic[];
+  const { topics, feed } = useLoaderData() as Home;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
@@ -43,7 +69,7 @@ const Layout = () => {
       />
       <div onClick={() => setMobileOpen(false)}>
         {windowWidth > 768 && <Sidebar topics={topics} />}
-        <Outlet />
+        {feed ? <Outlet context={feed satisfies Post[]}/> : <Outlet />}
       </div>
     </div>
   )
