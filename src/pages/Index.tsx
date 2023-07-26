@@ -1,21 +1,21 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useRef, Dispatch, SetStateAction } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Post } from './Layout';
+import { PostProps } from '../types';
 import useAuth from '../hooks/useAuth';
+import Account from '../components/Account';
 
 const Index = () => {
-  const { auth } = useAuth();
-  const feed: Post[] = useOutletContext();
-  const [username, setUsername] = useState(auth?.accessToken ? auth?.username : 'Super anonymous user');
-
-  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-  }
+  const { auth, setAuth } = useAuth();
+  const { feed, windowWidth, setErrMsg }: { feed: PostProps[], windowWidth: number, setErrMsg: Dispatch<SetStateAction<string>> }  = useOutletContext();
 
   return (
-    <div>
+    <div className='index'>
+      {!auth?.accessToken && (
+        <Account />
+      )}
+      <div className='feed'>
 
+      </div>
     </div>
   )
 }
