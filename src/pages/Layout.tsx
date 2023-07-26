@@ -1,52 +1,54 @@
-import { useState, useEffect, ContextType } from 'react';
-import { Outlet, useLoaderData } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react';
+import { Outlet } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { TopicProps, PostProps, Home } from '../types';
+import useAuth from '../hooks/useAuth';
 import axios from '../api/axios';
+import useAxiosPrivate from '../hooks/useAxiosPrivate';
 import Navbar from '../components/Navbar'
 import Sidebar from '../components/Sidebar';
+import Error from '../components/Error';
 
 const TOPICS_URL = '/topics';
 
-export type Topic = {
-  name: string,
-  id: number,
-}
-
-export type User = {
-  username: string,
-  rating: number,
-}
-
-export type Post = {
-  id: number,
-  topic: string,
-  title: string,
-  description: string,
-  rating: number,
-  created: Date,
-  user: User,
-}
-
-export type Home = {
-  topics: Topic[],
-  feed?: Post[],
-}
-
-export const loader = async () => {
-  const url = new URL(window.location.href);
-  const path = Boolean(url.pathname.slice(1));
-  const home = await axios.get<Home>(TOPICS_URL, {
-    params: {
-      index: path,
-    }
-  });
-  return home.data;
-}
-
 const Layout = () => {
   // temporary work-around since React Router does not support generic types here
-  const { topics, feed } = useLoaderData() as Home;
+  // const { topics, feed } = useLoaderData() as Home;
+  const [topics, setTopics] = useState<TopicProps[]>([]);
+  const [feed, setFeed] = useState<PostProps[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [errMsg, setErrMsg] = useState('');
+  const errRef = useRef<HTMLInputElement>(null);
+  const { auth } = useAuth();
+  const axiosPrivate = useAxiosPrivate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const path = Boolean(url.pathname.slice(1));
+    const axiosInstance = auth?.accessToken ? axiosPrivate : axios;
+
+    const fetchHome = async () => {
+      const home = await axiosInstance.get<Home>(TOPICS_URL, {
+        params: {
+          index: path,
+        }
+      });
+      setTopics(home.data.topics);
+      setFeed(home.data.feed);
+      setLoaded(true);
+    }
+
+    fetchHome().catch((error) => {
+      setErrMsg(error.message);
+      if (errRef.current) {
+        errRef.current.focus();
+      }
+      
+    })
+  }, [])
 
   useEffect(() => {
     const handleResize = () => {
@@ -66,11 +68,21 @@ const Layout = () => {
         topics={topics}
         windowWidth={windowWidth}
         mobileOpen={{ mobileOpen, setMobileOpen }}
+        loaded={loaded}
       />
-      <div onClick={() => setMobileOpen(false)}>
-        {windowWidth > 768 && <Sidebar topics={topics} />}
-        {feed ? <Outlet context={feed satisfies Post[]}/> : <Outlet />}
+      <div onClick={() => setMobileOpen(false)} className='main'>
+        {windowWidth > 768 && <Sidebar topics={topics} loaded={loaded} />}
+        {loaded && feed.length 
+          ? <Outlet context={{ feed, windowWidth, setErrMsg }}/> 
+          : loaded && !feed.length
+          ? <Outlet context={{ windowWidth, setErrMsg }} />
+          : (
+            <div className='loading'>
+              <FontAwesomeIcon icon={faSpinner} spin size='3x'/>
+            </div>
+          )}
       </div>
+      <Error errRef={errRef} errMsg={errMsg} setErrMsg={setErrMsg}/>
     </div>
   )
 }
