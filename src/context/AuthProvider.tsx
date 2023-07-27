@@ -10,7 +10,7 @@ type Auth = {
     username?: string,
     rating?: number,
   }
-  setAuth: Dispatch<SetStateAction<{ accessToken?: string }>>
+  setAuth: Dispatch<SetStateAction<{ accessToken?: string, username?: string, rating?: number }>>
 }
 
 const AuthContext = createContext<Auth>({
