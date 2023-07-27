@@ -13,12 +13,10 @@ import Error from '../components/Error';
 const TOPICS_URL = '/topics';
 
 const Layout = () => {
-  // temporary work-around since React Router does not support generic types here
-  // const { topics, feed } = useLoaderData() as Home;
   const [topics, setTopics] = useState<TopicProps[]>([]);
   const [feed, setFeed] = useState<PostProps[]>([]);
   const [loaded, setLoaded] = useState(false);
-  const [errMsg, setErrMsg] = useState('');
+  const [errMsg, setErrMsg] = useState<string | string[]>('');
   const errRef = useRef<HTMLInputElement>(null);
   const { auth } = useAuth();
   const axiosPrivate = useAxiosPrivate();
