@@ -45,14 +45,17 @@ const Navbar = ({ topics, loaded, windowWidth, mobileOpen: { mobileOpen, setMobi
                         </li>
                       ))}
                       </ul>
-                      <ul className='create'>
-                        <li>
-                          <NavLink
-                            to={'t/create'}
-                          >
-                            Create New 🔥 Topic
-                          </NavLink>
-                        </li>
+                      <ul className='topics-overview'>
+                      <li>
+                        <NavLink to={'t/overview/status'}>
+                          {topics.length < 10 
+                            ? 'Create New 🔥 Topic' 
+                            : topics.some((topic) => Boolean(topic?.relStatus))
+                            ? 'Relegation Battle in Progress'
+                            : 'Start Relegation Battle'
+                          }
+                        </NavLink>
+                      </li>
                       </ul>
                     </>
                   ) : (
