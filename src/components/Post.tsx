@@ -1,8 +1,9 @@
 import { useState, FormEvent, Dispatch, SetStateAction } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComment } from '@fortawesome/free-regular-svg-icons';
+import { faCheck } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
-import { PostProps } from '../types';
+import { PostProps, SetErrMsg } from '../types';
 import RatingPanel from './RatingPanel';
 import useAxiosPrivate from '../hooks/useAxiosPrivate';
 import useAuth from '../hooks/useAuth';
@@ -21,9 +22,17 @@ const hotnessStyling: { [rank: string]: [string, string] } = {
   '10': ['Coldest.', '#024dfa'],
 }
 
-const Post = ({ post, windowWidth, wrapped, setErrMsg }: { post: PostProps, windowWidth: number, wrapped: boolean, setErrMsg: Dispatch<SetStateAction<string>> }) => {
-  const [ratingVote, setRatingVote] = useState(post.rated);
-  const [relVote, setRelVote] = useState<string | undefined>(post.topic?.relStatus?.voted);
+type PostComponentProps = { 
+  post: PostProps,
+  setPost?: Dispatch<SetStateAction<PostProps>>, 
+  windowWidth: number, 
+  wrapped: boolean, 
+  setErrMsg: SetErrMsg 
+}
+
+const Post = ({ post, setPost, windowWidth, wrapped, setErrMsg }: PostComponentProps) => {
+  const [ratingVote, setRatingVote] = useState<'+' | '-' | ''>(post.rated);
+  const [relVote, setRelVote] = useState<'+' | '-' | '' | undefined>(post.topic?.relStatus?.voted);
   const [postedAt, setPostedAt] = useState(() => {
     const date = post.created;
     const timeElapsed = Math.round((Date.now() - date.getTime()) / 1000);
@@ -43,12 +52,13 @@ const Post = ({ post, windowWidth, wrapped, setErrMsg }: { post: PostProps, wind
     }
   });
   const { auth } = useAuth();
+  const [ownsPost, setOwnsPost] = useState(auth?.username === post.user.username ? true : false)
 
   const handleVote = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     e.stopPropagation();
     if (!auth?.accessToken) {
-      setErrMsg('You must be logged in to vote');
+      setErrMsg(['auth required', 'You must be logged in to vote']);
       return;
     }
 
@@ -69,7 +79,13 @@ const Post = ({ post, windowWidth, wrapped, setErrMsg }: { post: PostProps, wind
   }
 
   return (
-    <div className={wrapped ? 'wrapped-post' : 'expanded-post'}>
+    <div 
+      className={wrapped && !ownsPost 
+        ? 'wrapped-post' 
+        : wrapped && ownsPost
+        ? 'wrapped-post owner'
+        : 'expanded-post'}
+    >
       {(windowWidth > 768 && wrapped) && (
         <RatingPanel rating={post.rating} handleVote={handleVote} voteStatus={ratingVote} voteType='ratingvote'/>
       )}
@@ -86,23 +102,27 @@ const Post = ({ post, windowWidth, wrapped, setErrMsg }: { post: PostProps, wind
               <>
                 <span>Topic in relegation danger!</span>
                 <span>{post.topic.relStatus.keep} keep / {post.topic.relStatus.replace} replace</span>
-                <RatingPanel rating={post.topic.relStatus.keep - post.topic.relStatus.replace} handleVote={handleVote} voteStatus={relVote} voteType='ratingvote'/>
+                <RatingPanel rating={post.topic.relStatus.keep - post.topic.relStatus.replace} handleVote={handleVote} voteStatus={relVote ? relVote : ''} voteType='relvote'/>
               </>
             )}
           </div>
         </div>
         <div className='post-details'>
           <span>{post.title}</span>
-          <span>Posted by {post.user.username}|{post.user.rating}</span>
-          {post.created && (
-            <span>{postedAt}</span>
-            )}
+          <div>
+            <span>Posted by {post.user.username}|{post.user.rating}</span>
+            {ownsPost && <FontAwesomeIcon icon={faCheck} size='xl'/>}
+          </div>
+          <span>{postedAt}</span>
         </div>
         <div className='post-body'>
           {post.description.length > 300 ? (
             <p>{post.description.slice(0, 300).trim() + '...'}</p>
           ) : (
             <p>{post.description}</p>
+          )}
+          {post.edited && (
+          <span><i>edited</i></span>
           )}
         </div>
         <div className='post-footer'>
