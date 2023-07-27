@@ -1,6 +1,8 @@
+import { Dispatch, SetStateAction } from 'react'
+
 export type RelStatus = {
   id: string,
-  voted: string,
+  voted: '+' | '-' | '',
   keep: number,
   replace: number,
   competitor: string,
@@ -18,12 +20,14 @@ export type User = {
   rating: number,
 }
 
-export type Comment = {
-  comment: string,
+export type CommentProps = {
+  id: string,
+  text: string,
+  edited: boolean,
   rating: number,
-  rated: string,
+  rated: '+' | '-' | '',
   created: Date,
-  commenter: User,
+  user: User,
 }
 
 export type PostProps = {
@@ -31,14 +35,17 @@ export type PostProps = {
   topic: TopicProps,
   title: string,
   description: string,
-  rated: string,
+  edited: boolean,
+  rated: '+' | '-' | '',
   rating: number,
   created: Date,
   user: User,
-  comments: Comment[],
+  comments: CommentProps[] | [],
 }
 
 export type Home = {
   topics: TopicProps[],
-  feed: PostProps[],
+  feed: PostProps[] | [],
 }
+
+export type SetErrMsg = Dispatch<SetStateAction<string | string[]>>;
