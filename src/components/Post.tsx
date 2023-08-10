@@ -1,12 +1,14 @@
 import { useState, FormEvent, Dispatch, SetStateAction } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComment } from '@fortawesome/free-regular-svg-icons';
-import { faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faPen } from '@fortawesome/free-solid-svg-icons';
 import { Link } from 'react-router-dom';
 import { PostProps, SetErrMsg } from '../types';
 import RatingPanel from './RatingPanel';
+import axios from 'axios';
 import useAxiosPrivate from '../hooks/useAxiosPrivate';
 import useAuth from '../hooks/useAuth';
+import PostForm from './PostForm';
 
 // numbers corresponse to ranks, 1 being hottest, 10 being least hot
 const hotnessStyling: { [rank: string]: [string, string] } = {
@@ -52,7 +54,53 @@ const Post = ({ post, setPost, windowWidth, wrapped, setErrMsg }: PostComponentP
     }
   });
   const { auth } = useAuth();
-  const [ownsPost, setOwnsPost] = useState(auth?.username === post.user.username ? true : false)
+  const axiosPrivate = useAxiosPrivate();
+  const [ownsPost, setOwnsPost] = useState(auth?.username === post.user.username ? true : false);
+  const [toggleEdit, setToggleEdit] = useState(false);
+  const [description, setDescription] = useState('');
+
+  const handleEditPost = async (e: FormEvent) => {
+    e.preventDefault();
+
+    if (!description) {
+      setErrMsg('Description required');
+    }
+
+    if (description.length > 1000) {
+      setErrMsg('Description too long');
+    }
+
+    const URL = `/topics/${post.topic}/posts/${post.id}`;
+
+    try {
+      await axiosPrivate.patch(URL, {
+        description,
+      })
+      if (setPost) {
+        setPost((prev) => {
+          return {
+            ...prev,
+            description,
+            edited: true,
+          }
+        });
+      }
+      setToggleEdit(false);
+      setDescription('');
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 409) {
+          setErrMsg('Username Taken');
+        } else if (err.response?.status === 400) {
+          setErrMsg('Complete all fields as instructed');
+        } else {
+          setErrMsg('Registration Failed');
+        }
+      } else {
+        setErrMsg('No Server Response');
+      }
+    }
+  }
 
   const handleVote = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -114,17 +162,38 @@ const Post = ({ post, setPost, windowWidth, wrapped, setErrMsg }: PostComponentP
             {ownsPost && <FontAwesomeIcon icon={faCheck} size='xl'/>}
           </div>
           <span>{postedAt}</span>
+          {(ownsPost && !toggleEdit)} && (
+            <button type='button' onClick={() => setToggleEdit(true)}>
+              <FontAwesomeIcon icon={faPen} size='xl'/>
+              <span>edit</span>
+            </button>
+          )
         </div>
-        <div className='post-body'>
-          {post.description.length > 300 ? (
-            <p>{post.description.slice(0, 300).trim() + '...'}</p>
-          ) : (
-            <p>{post.description}</p>
-          )}
-          {post.edited && (
-          <span><i>edited</i></span>
-          )}
-        </div>
+        {!toggleEdit ? (
+          <div className='post-body'>
+            {wrapped && post.description.length > 300 ? (
+              <p>{post.description.slice(0, 300).trim() + '...'}</p>
+            ) : (
+              <p>{post.description}</p>
+            )}
+            {post.edited && (
+            <span><i>edited</i></span>
+            )}
+          </div>
+        ) : (
+          <div className='edit'>
+            <PostForm 
+              title={post.title} 
+              prevDescription={post.description} 
+              description={description}
+              setDescription={setDescription}
+              setAddPost={setToggleEdit}
+              setErrMsg={setErrMsg}
+              handleSubmit={handleEditPost}
+            />
+          </div>
+        )}    
+        
         <div className='post-footer'>
           <div>
             {(!wrapped || windowWidth <= 768) && (
