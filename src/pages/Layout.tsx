@@ -46,7 +46,7 @@ const Layout = () => {
       }
       
     })
-  }, [])
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -73,7 +73,7 @@ const Layout = () => {
         {loaded && feed.length 
           ? <Outlet context={{ feed, windowWidth, setErrMsg }}/> 
           : loaded && !feed.length
-          ? <Outlet context={{ windowWidth, setErrMsg }} />
+          ? <Outlet context={{ topics, windowWidth, setErrMsg }} />
           : (
             <div className='loading'>
               <FontAwesomeIcon icon={faSpinner} spin size='3x'/>
