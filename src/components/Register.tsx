@@ -45,7 +45,7 @@ const Register = ({ setErrMsg }: { setErrMsg: SetErrMsg }) => {
     }
 
     try {
-      const response = await axiosInstance.post(REGISTER_URL,
+      await axiosInstance.post(REGISTER_URL,
         {
           username,
           pwd,
