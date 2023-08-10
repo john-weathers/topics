@@ -20,7 +20,7 @@ export const router = createBrowserRouter(
         <Route index element={<Index />}/>
         <Route path='t/overview/status' element={<TopicsOverview />}/>
         <Route path='t/:topicName' element={<TopicFeed />} loader={topicFeedLoader}/>
-        <Route path='t/:topicName/comments/:postId' element={<PostView />}/>
+        <Route path='t/:topicName/posts/:postId' element={<PostView />}/>
       </Route>
     </Route>
     
