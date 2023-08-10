@@ -3,6 +3,7 @@ import { NavLink } from "react-router-dom"
 import { TopicProps } from '../types';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChevronDown, faChevronUp, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import useLogout from '../hooks/useLogout';
 import '../css/nav.css';
 
 type NavbarProps = {
@@ -16,6 +17,7 @@ type NavbarProps = {
 }
 
 const Navbar = ({ topics, loaded, windowWidth, mobileOpen: { mobileOpen, setMobileOpen } }: NavbarProps) => {
+  const logout = useLogout();
   
   return (
     <nav className='header'>
@@ -46,16 +48,16 @@ const Navbar = ({ topics, loaded, windowWidth, mobileOpen: { mobileOpen, setMobi
                       ))}
                       </ul>
                       <ul className='topics-overview'>
-                      <li>
-                        <NavLink to={'t/overview/status'}>
-                          {topics.length < 10 
-                            ? 'Create New 🔥 Topic' 
-                            : topics.some((topic) => Boolean(topic?.relStatus))
-                            ? 'Relegation Battle in Progress'
-                            : 'Start Relegation Battle'
-                          }
-                        </NavLink>
-                      </li>
+                        <li>
+                          <NavLink to={'t/overview/status'}>
+                            {topics.length < 10 
+                              ? 'Create New 🔥 Topic' 
+                              : topics.some((topic) => Boolean(topic?.relStatus))
+                              ? 'Relegation Battle in Progress'
+                              : 'Start Relegation Battle'
+                            }
+                          </NavLink>
+                        </li>
                       </ul>
                     </>
                   ) : (
@@ -68,6 +70,7 @@ const Navbar = ({ topics, loaded, windowWidth, mobileOpen: { mobileOpen, setMobi
             </button>
           </li>
         )}
+        <li onClick={async () => await logout()} className='logout'>Logout</li>
       </ul>
     </nav>
   )
