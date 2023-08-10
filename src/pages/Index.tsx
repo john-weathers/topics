@@ -1,4 +1,3 @@
-import { useState, FormEvent, useRef, Dispatch, SetStateAction } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { PostProps, SetErrMsg } from '../types';
 import useAuth from '../hooks/useAuth';
@@ -6,7 +5,7 @@ import Account from '../components/Account';
 import PostWrapper from '../components/PostWrapper';
 
 const Index = () => {
-  const { auth, setAuth } = useAuth();
+  const { auth } = useAuth();
   const { feed, windowWidth, setErrMsg }: { feed: PostProps[], windowWidth: number, setErrMsg: SetErrMsg }  = useOutletContext();
 
   return (
