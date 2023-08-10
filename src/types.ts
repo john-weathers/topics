@@ -22,6 +22,7 @@ export type User = {
 
 export type CommentProps = {
   id: string,
+  ref?: boolean,
   text: string,
   edited: boolean,
   rating: number,
@@ -32,6 +33,7 @@ export type CommentProps = {
 
 export type PostProps = {
   id: string,
+  version: number,
   topic: TopicProps,
   title: string,
   description: string,
