@@ -2,6 +2,7 @@ import { useState, FormEvent, Dispatch, SetStateAction } from 'react';
 import { CommentProps, PostProps, SetErrMsg } from '../types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheck, faPen } from '@fortawesome/free-solid-svg-icons';
+import axios from 'axios';
 import useAxiosPrivate from '../hooks/useAxiosPrivate';
 import CommentForm from './CommentForm';
 import RatingPanel from './RatingPanel';
@@ -9,12 +10,13 @@ import useAuth from '../hooks/useAuth';
 
 type CommentComponentProps = { 
   postId: string,
+  topicName: string,
   setPost: Dispatch<SetStateAction<PostProps>>, 
   comment: CommentProps, 
   setErrMsg: SetErrMsg,
 }
 
-const Comment = ({ postId, setPost, comment, setErrMsg }: CommentComponentProps) => {
+const Comment = ({ postId, topicName, setPost, comment, setErrMsg }: CommentComponentProps) => {
   const [ratingVote, setRatingVote] = useState<'+' | '-' | ''>(comment.rated);
   const [postedAt, setPostedAt] = useState(() => {
     const date = comment.created;
@@ -43,7 +45,56 @@ const Comment = ({ postId, setPost, comment, setErrMsg }: CommentComponentProps)
   const handleEdit = async (e: FormEvent) => {
     e.preventDefault();
     
-    // const response = axiosPrivate.patch()
+    if (!editText) {
+      setErrMsg('Text required to edit comment');
+      return;
+    }
+
+    if (editText.length > 1000) {
+      setErrMsg('Comment too long');
+      return;
+    }
+
+    const URL = `/topics/${topicName}/posts/${postId}/comments/${comment.id}`
+    // only one post so update below to include update of entire post?
+    // if so, include functionality to scroll to that specific comment if practicable given time constraints
+    try {
+      // rather than return the entire post, going to replace old comment with fresh one
+      const { data } = await axiosPrivate.patch<CommentProps>(URL, {
+        text: editText,
+      })
+      data.ref = true;
+      // FUTURE TODO: integrate caching library and more complex state management
+      setPost((prev) => {
+        return {
+          ...prev,
+          comments: prev.comments.map((prevComment) => {
+            if (prevComment.id !== comment.id) {
+              prevComment.ref = false;
+              return prevComment;
+            } else {
+              return data;
+            }
+          })
+        }
+      });
+      setToggleEdit(false);
+      setEditText('');
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 409) {
+          setErrMsg('Username Taken');
+        } else if (err.response?.status === 400) {
+          setErrMsg('Complete all fields as instructed');
+        } else {
+          setErrMsg('Registration Failed');
+        }
+      } else {
+        setErrMsg('No Server Response');
+      }
+    }
+    
+    
   }
 
   const handleVote = async (e: FormEvent<HTMLFormElement>) => {
