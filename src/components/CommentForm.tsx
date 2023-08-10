@@ -22,16 +22,18 @@ const CommentForm = ({ previousComment = '', commentText, setCommentText, setAdd
       <textarea
         id='comment-text'
         value={commentText || previousComment}
+        required
         onChange={(e) => {
           if (commentText.length > 1000) {
             setErrMsg(`Comments must be 1000 characters or less. Trim ${commentText.length - 1000} characters`)
           }
           setCommentText(e.target.value);
         }}
+        className='textarea-field'
       />
       <div>
         <button type='button' onClick={() => setAddComment(false)}>Cancel</button>
-        <button>Submit</button>
+        <button disabled={commentText.length > 1000 ? true : false}>Submit</button>
       </div>
     </form>
   )
