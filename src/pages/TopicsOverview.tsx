@@ -38,6 +38,16 @@ const TopicsOverview = () => {
     })
     return tracker;
   });
+  const [ratingVotes, setRatingVotes] = useState(() => {
+    const tracker: { [name: string]: number } = {};
+    topics.forEach((topic) => {
+      const relStatus = topic?.relStatus;
+      if (relStatus) {
+        tracker[topic.name] = relStatus.keep - relStatus.replace;
+      }
+    })
+    return tracker;
+  });
   const axiosPrivate = useAxiosPrivate();
 
   const handleNewTopic = async (e: FormEvent) => {
@@ -138,7 +148,8 @@ const TopicsOverview = () => {
     }
     
     const prevVote = relVotes[topic];
-    setRelVotes((prev) => {
+    const prevRating = ratingVotes[topic];
+    setRelVotes(prev => {
       const updated: { [name: string]: '+' | '-' | '' } = {};
       updated[topic] = vote;
       return {
@@ -146,6 +157,28 @@ const TopicsOverview = () => {
         ...updated,
       }
     });
+    setRatingVotes(prev => {
+      const updated: { [name: string]: number } = {};
+      let updatedRating = prevRating;
+      if (prevVote === '' && vote === '+') {
+        updatedRating += 1;
+      } else if (prevVote === '' && vote === '-') {
+        updatedRating -= 1;
+      } else if (prevVote === '+' && vote === '+') {
+        updatedRating -= 1;
+      } else if (prevVote === '-' && vote === '-') {
+        updatedRating += 1;
+      } else if (prevVote === '-' && vote === '+') {
+        updatedRating += 2;
+      } else {
+        updatedRating -= 2;
+      }
+      updated[topic] = updatedRating;
+      return {
+        ...prev,
+        ...updated,
+      }
+    })
 
     const URL = `/topics/${topic}/relegation/vote`;
 
@@ -157,6 +190,14 @@ const TopicsOverview = () => {
       setRelVotes((prev) => {
         const reverted: { [name: string]: '+' | '-' | '' } = {};
         reverted[topic] = prevVote;
+        return {
+          ...prev,
+          ...reverted,
+        }
+      });
+      setRatingVotes((prev) => {
+        const reverted: { [name: string]: number } = {};
+        reverted[topic] = prevRating;
         return {
           ...prev,
           ...reverted,
@@ -216,7 +257,7 @@ const TopicsOverview = () => {
                     <div>
                       <span>🚨Relegation Vote🚨</span>
                       <RatingPanel 
-                        rating={topic.relStatus.keep - topic.relStatus.replace} 
+                        rating={ratingVotes[topic.name]} 
                         handleVote={handleVote} 
                         voteStatus={relVotes[topic.name]} 
                         voteType='relvoteoverview'
