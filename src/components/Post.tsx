@@ -35,6 +35,14 @@ type PostComponentProps = {
 const Post = ({ post, setPost, windowWidth, wrapped, setErrMsg }: PostComponentProps) => {
   const [ratingVote, setRatingVote] = useState<'+' | '-' | ''>(post.rated);
   const [relVote, setRelVote] = useState<'+' | '-' | '' | undefined>(post.topic?.relStatus?.voted);
+  const [postRating, setPostRating] = useState(post.rating);
+  const [relRating, setRelRating] = useState(() => {
+    if (post.topic?.relStatus) {
+      return post.topic.relStatus.keep - post.topic.relStatus.replace;
+    } else {
+      return 0;
+    }
+  })
   const [postedAt, setPostedAt] = useState(() => {
     const date = post.created;
     const timeElapsed = Math.round((Date.now() - date.getTime()) / 1000);
@@ -113,12 +121,80 @@ const Post = ({ post, setPost, windowWidth, wrapped, setErrMsg }: PostComponentP
     const raV = e.currentTarget?.ratingvote?.value;
     const reV = e.currentTarget?.relvote?.value;
     if (raV) {
+      const prevRatingVote = ratingVote;
+      const prevPostRating = postRating;
       setRatingVote(prev => prev === raV ? '' : raV);
-      // SERVER CALL (vote and vote type)
+      setPostRating(prev => {
+        if (prevRatingVote === '' && (raV === '+' || raV === '-')) {
+          return raV === '+' ? prev + 1 : prev - 1;
+        } else if (prevRatingVote === '+' && raV === '+') {
+          return prev - 1;
+        } else if (prevRatingVote === '-' && raV === '-') {
+          return prev + 1;
+        } else if (prevRatingVote === '-' && raV === '+') {
+          return prev + 2;
+        } else {
+          return prev - 2;
+        }
+      });
+      const URL = `/topics/${post.topic.name}/posts/${post.id}/vote`;
+      try {
+        await axiosPrivate.patch(URL, {
+          vote: raV,
+        });
+      } catch (err) {
+        setRatingVote(prevRatingVote);
+        setPostRating(prevPostRating);
+        if (axios.isAxiosError(err)) {
+          if (err.response?.status === 409) {
+            setErrMsg('Username Taken');
+          } else if (err.response?.status === 400) {
+            setErrMsg('Complete all fields as instructed');
+          } else {
+            setErrMsg('Registration Failed');
+          }
+        } else {
+          setErrMsg('No Server Response');
+        }
+      }
       
     } else if (reV) {
+      const prevRelVote = relVote;
+      const prevRelRating = relRating;
       setRelVote(prev => prev === reV ? '' : reV);
-      // SERVER CALL (vote and vote type)
+      setRelRating(prev => {
+        if (prevRelVote === '' && (reV === '+' || reV === '-')) {
+          return reV === '+' ? prev + 1 : prev - 1;
+        } else if (prevRelVote === '+' && reV === '+') {
+          return prev - 1;
+        } else if (prevRelVote === '-' && reV === '-') {
+          return prev + 1;
+        } else if (prevRelVote === '-' && reV === '+') {
+          return prev + 2;
+        } else {
+          return prev - 2;
+        }
+      });
+      const URL = `/topics/${post.topic.name}/relegation/vote`
+      try {
+        await axiosPrivate.patch(URL, {
+          vote: reV,
+        });
+      } catch (err) {
+        setRelVote(prevRelVote);
+        setRelRating(prevRelRating);
+        if (axios.isAxiosError(err)) {
+          if (err.response?.status === 409) {
+            setErrMsg('Username Taken');
+          } else if (err.response?.status === 400) {
+            setErrMsg('Complete all fields as instructed');
+          } else {
+            setErrMsg('Registration Failed');
+          }
+        } else {
+          setErrMsg('No Server Response');
+        }
+      }
 
     } else {
       setErrMsg('Invalid value provided');
@@ -135,7 +211,7 @@ const Post = ({ post, setPost, windowWidth, wrapped, setErrMsg }: PostComponentP
         : 'expanded-post'}
     >
       {(windowWidth > 768 && wrapped) && (
-        <RatingPanel rating={post.rating} handleVote={handleVote} voteStatus={ratingVote} voteType='ratingvote'/>
+        <RatingPanel rating={postRating} handleVote={handleVote} voteStatus={ratingVote} voteType='ratingvote'/>
       )}
       <div className='main-panel'>
         <div className='post-header'>
@@ -149,8 +225,7 @@ const Post = ({ post, setPost, windowWidth, wrapped, setErrMsg }: PostComponentP
             ) : (
               <>
                 <span>Topic in relegation danger!</span>
-                <span>{post.topic.relStatus.keep} keep / {post.topic.relStatus.replace} replace</span>
-                <RatingPanel rating={post.topic.relStatus.keep - post.topic.relStatus.replace} handleVote={handleVote} voteStatus={relVote ? relVote : ''} voteType='relvote'/>
+                <RatingPanel rating={relRating} handleVote={handleVote} voteStatus={relVote ? relVote : ''} voteType='relvote'/>
               </>
             )}
           </div>
@@ -197,7 +272,7 @@ const Post = ({ post, setPost, windowWidth, wrapped, setErrMsg }: PostComponentP
         <div className='post-footer'>
           <div>
             {(!wrapped || windowWidth <= 768) && (
-              <RatingPanel rating={post.rating} handleVote={handleVote} voteStatus={ratingVote} voteType='ratingvote'/>
+              <RatingPanel rating={postRating} handleVote={handleVote} voteStatus={ratingVote} voteType='ratingvote'/>
             )}
           </div>
           <div className='comment-info'>
