@@ -41,6 +41,7 @@ const Comment = ({ postId, topicName, setPost, comment, setErrMsg }: CommentComp
   const [ownsComment, setOwnsComment] = useState(auth?.username === comment.user.username ? true : false);
   const [toggleEdit, setToggleEdit] = useState(false);
   const [editText, setEditText] = useState('');
+  const [rating, setRating] = useState(comment.rating);
 
   const handleEdit = async (e: FormEvent) => {
     e.preventDefault();
@@ -106,9 +107,42 @@ const Comment = ({ postId, topicName, setPost, comment, setErrMsg }: CommentComp
 
     const vote = e.currentTarget?.ratingvote?.value;
     if (vote) {
+      const prevVote = ratingVote;
+      const prevRating = rating;
       setRatingVote(prev => prev === vote ? '' : vote);
-      // SERVER CALL (vote and vote type)
-      // set post on success, filter appropriate values
+      setRating(prev => {
+        if (prevVote === '' && (vote === '+' || vote === '-')) {
+          return vote === '+' ? prev + 1 : prev - 1;
+        } else if (prevVote === '+' && vote === '+') {
+          return prev - 1;
+        } else if (prevVote === '-' && vote === '-') {
+          return prev + 1;
+        } else if (prevVote === '-' && vote === '+') {
+          return prev + 2;
+        } else {
+          return prev - 2;
+        }
+      });
+      const URL = `/topics/${topicName}/posts/${postId}/comments/${comment.id}/vote`;
+      try {
+        await axiosPrivate.patch(URL, {
+          vote,
+        });
+      } catch (err) {
+        setRatingVote(prevVote);
+        setRating(prevRating);
+        if (axios.isAxiosError(err)) {
+          if (err.response?.status === 409) {
+            setErrMsg('Username Taken');
+          } else if (err.response?.status === 400) {
+            setErrMsg('Complete all fields as instructed');
+          } else {
+            setErrMsg('Registration Failed');
+          }
+        } else {
+          setErrMsg('No Server Response');
+        }
+      }
     } else {
       setErrMsg('Invalid value provided');
       return;
@@ -137,7 +171,7 @@ const Comment = ({ postId, topicName, setPost, comment, setErrMsg }: CommentComp
         )}
       </div>
       <div className='comment-footer'>
-          <RatingPanel rating={comment.rating} handleVote={handleVote} voteStatus={ratingVote} voteType='ratingvote'/>
+          <RatingPanel rating={rating} handleVote={handleVote} voteStatus={ratingVote} voteType='ratingvote'/>
           {(ownsComment && !toggleEdit) && (
             <button type='button' onClick={() => setToggleEdit(true)}>
               <FontAwesomeIcon icon={faPen} size='xl'/>
